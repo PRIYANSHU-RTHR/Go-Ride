@@ -21,7 +21,9 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("POST /trip/preview", handleTripPreview)
+	mux.HandleFunc("POST /trip/preview", enableCORS(handleTripPreview))
+	mux.HandleFunc("/ws/drivers", handleDriversWebSocket)
+	mux.HandleFunc("/ws/riders", handleRidersWebSocket)
 
 	server := &http.Server{
 		Addr:    httpAddr,
@@ -47,10 +49,11 @@ func main() {
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-
+		log.Println("Starting graceful shutdown")
 		if err := server.Shutdown(ctx); err != nil {
 			log.Printf("Could not stop the server gracefully: %v", err)
 			server.Close()
 		}
+		log.Println("Shutdown complete")
 	}
 }
