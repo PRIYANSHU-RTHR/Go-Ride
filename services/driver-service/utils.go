@@ -1,6 +1,9 @@
 package main
 
-import "math/rand"
+import (
+	"fmt"
+	"math/rand"
+)
 
 // Predefined routes for drivers in Gandhinagar, Gujarat
 var PredefinedRoutes = [][][]float64{
@@ -57,10 +60,18 @@ var PredefinedRoutes = [][][]float64{
 
 func GenerateRandomPlate() string {
 	letters := "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	plate := ""
-	for i := 0; i < 3; i++ {
-		plate += string(letters[rand.Intn(len(letters))])
+	//some Gujarat RTO-codes
+	rtoCodes := []int{
+		1, 5, 6, 18, 27, 38,
 	}
 
-	return plate
+	rto := rtoCodes[rand.Intn(len(rtoCodes))]
+
+	series := fmt.Sprintf("%c%c",
+		letters[rand.Intn(len(letters))],
+		letters[rand.Intn(len(letters))],
+	)
+
+	number := rand.Intn(9000) + 1000
+	return fmt.Sprintf("GJ%02d%s%04d", rto, series, number)
 }
