@@ -10,6 +10,7 @@ type RideFareModel struct {
 	UserID            string
 	PackageSlug       string // ex: van, luxury, sedan
 	TotalPriceInCents float64
+	
 }
 
 func (r *RideFareModel) ToProto() *pb.RideFare {

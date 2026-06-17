@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"ride-sharing/services/trip-service/internal/domain"
 	tripTypes "ride-sharing/services/trip-service/pkg/types"
+	"ride-sharing/shared/proto/trip"
 	"ride-sharing/shared/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -35,14 +37,38 @@ func (s *service) CreateTrip(ctx context.Context, fare *domain.RideFareModel) (*
 	return s.repo.CreateTrip(ctx, t)
 }
 
-func (s *service) GetRoute(ctx context.Context, pickup, destination *types.Coordinate) (*tripTypes.OsrmApiResponse, error) {
+func (s *service) GetRoute(ctx context.Context, pickup, destination *types.Coordinate, useOSRMApi bool) (*tripTypes.OsrmApiResponse, error) {
+	if !useOSRMApi {
+		// Return a simple mock response in case we don't want to rely on an external API
+		return &tripTypes.OsrmApiResponse{
+			Routes: []struct {
+				Distance float64 `json:"distance"`
+				Duration float64 `json:"duration"`
+				Geometry struct {
+					Coordinates [][]float64 `json:"coordinates"`
+				} `json:"geometry"`
+			}{
+				{
+					Distance: 5.0,
+					Duration: 600,
+					Geometry: struct {
+						Coordinates [][]float64 `json:"coordinates"`
+					}{
+						Coordinates: [][]float64{
+							{pickup.Latitude, pickup.Longitude},
+							{destination.Latitude, destination.Longitude},
+						},
+					},
+				},
+			},
+		}, nil
+	}
 	url := fmt.Sprintf(
 		"http://router.project-osrm.org/route/v1/driving/%f,%f;%f,%f?overview=full&geometries=geojson",
 		pickup.Longitude, pickup.Latitude,
 		destination.Longitude, destination.Latitude,
 	)
 
-	
 	log.Printf("Fetching from OSRM API: URL: %s", url)
 
 	resp, err := http.Get(url)
@@ -65,7 +91,6 @@ func (s *service) GetRoute(ctx context.Context, pickup, destination *types.Coord
 
 	return &routeResp, nil
 }
-
 
 func (s *service) EstimatePackagesPriceWithRoute(route *tripTypes.OsrmApiResponse) []*domain.RideFareModel {
 	baseFares := getBaseFares()
