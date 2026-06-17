@@ -49,8 +49,8 @@ func (s *service) GetRoute(ctx context.Context, pickup, destination *types.Coord
 				} `json:"geometry"`
 			}{
 				{
-					Distance: 5.0, 
-					Duration: 600, 
+					Distance: 5.0,
+					Duration: 600,
 					Geometry: struct {
 						Coordinates [][]float64 `json:"coordinates"`
 					}{
@@ -64,7 +64,7 @@ func (s *service) GetRoute(ctx context.Context, pickup, destination *types.Coord
 		}, nil
 	}
 	url := fmt.Sprintf(
-		"http://router.project-osrm.org/route/v1/driving/%f,%f;%f,%f?overview=full&geometries=geojson",
+		"http://router.project-osrm.org/route/v1/driving/%f,%f;%f,%f?overview=simplified&geometries=geojson",
 		pickup.Longitude, pickup.Latitude,
 		destination.Longitude, destination.Latitude,
 	)
@@ -82,7 +82,7 @@ func (s *service) GetRoute(ctx context.Context, pickup, destination *types.Coord
 		return nil, fmt.Errorf("failed to read the response: %v", err)
 	}
 
-	log.Printf("Got response from OSRM API %s", string(body))
+	log.Printf("OSRM response size: %d bytes", len(body))
 
 	var routeResp tripTypes.OsrmApiResponse
 	if err := json.Unmarshal(body, &routeResp); err != nil {
@@ -103,17 +103,18 @@ func (s *service) EstimatePackagesPriceWithRoute(route *tripTypes.OsrmApiRespons
 	return estimatedFares
 }
 
-func (s *service) GenerateTripFares(ctx context.Context, rideFares []*domain.RideFareModel, userID string) ([]*domain.RideFareModel, error) {
+func (s *service) GenerateTripFares(ctx context.Context, rideFares []*domain.RideFareModel, userID string,route *tripTypes.OsrmApiResponse) ([]*domain.RideFareModel, error) {
 	fares := make([]*domain.RideFareModel, len(rideFares))
 
 	for i, f := range rideFares {
 		id := primitive.NewObjectID()
 
 		fare := &domain.RideFareModel{
-			UserID:            userID,
-			ID:                id,
-			TotalPriceInCents: f.TotalPriceInCents,
-			PackageSlug:       f.PackageSlug,
+			UserID:      userID,
+			ID:          id,
+			TotalPrice:  f.TotalPrice,
+			PackageSlug: f.PackageSlug,
+			Route: route,
 		}
 
 		if err := s.repo.SaveRideFare(ctx, fare); err != nil {
@@ -144,40 +145,65 @@ func (s *service) GetAndValidateFare(ctx context.Context, fareID, userID string)
 	return fare, nil
 }
 
-func estimateFareRoute(f *domain.RideFareModel, route *tripTypes.OsrmApiResponse) *domain.RideFareModel {
-	pricingCfg := tripTypes.DefaultPricingConfig()
-	carPackagePrice := f.TotalPriceInCents
+func estimateFareRoute(
+	f *domain.RideFareModel,
+	route *tripTypes.OsrmApiResponse,
+) *domain.RideFareModel {
 
-	distanceKm := route.Routes[0].Distance
-	durationInMinutes := route.Routes[0].Duration
+	distanceKm := route.Routes[0].Distance / 1000.0
+	durationMinutes := route.Routes[0].Duration / 60.0
 
-	distanceFare := distanceKm * pricingCfg.PricePerUnitOfDistance
-	timeFare := durationInMinutes * pricingCfg.PricingPerMinute
-	totalPrice := carPackagePrice + distanceFare + timeFare
+	var baseFare float64
+	var pricePerKm float64
+	var pricePerMinute float64
+
+	switch f.PackageSlug {
+
+	case "sedan":
+		baseFare = 60
+		pricePerKm = 14
+		pricePerMinute = 2
+
+	case "suv":
+		baseFare = 90
+		pricePerKm = 18
+		pricePerMinute = 2.5
+
+	case "van":
+		baseFare = 120
+		pricePerKm = 22
+		pricePerMinute = 3
+
+	case "luxury":
+		baseFare = 250
+		pricePerKm = 35
+		pricePerMinute = 5
+	}
+
+	totalPrice :=
+		baseFare +
+			(distanceKm * pricePerKm) +
+			(durationMinutes * pricePerMinute)
 
 	return &domain.RideFareModel{
-		TotalPriceInCents: totalPrice,
-		PackageSlug:       f.PackageSlug,
+		PackageSlug: f.PackageSlug,
+		TotalPrice:  totalPrice,
 	}
 }
 
 func getBaseFares() []*domain.RideFareModel {
 	return []*domain.RideFareModel{
 		{
-			PackageSlug:       "suv",
-			TotalPriceInCents: 200,
+			PackageSlug: "suv",
 		},
 		{
-			PackageSlug:       "sedan",
-			TotalPriceInCents: 350,
+			PackageSlug: "sedan",
 		},
 		{
-			PackageSlug:       "van",
-			TotalPriceInCents: 400,
+			PackageSlug: "van",
 		},
 		{
-			PackageSlug:       "luxury",
-			TotalPriceInCents: 1000,
+			PackageSlug: "luxury",
 		},
 	}
 }

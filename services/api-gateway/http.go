@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"ride-sharing/services/api-gateway/grpc_clients"
 	"ride-sharing/shared/contracts"
-	"time"
 )
 
 func handleTripStart(w http.ResponseWriter, r *http.Request) {
@@ -41,13 +40,7 @@ func handleTripStart(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, response)
 }
 
-
 func handleTripPreview(w http.ResponseWriter, r *http.Request) {
-	log.Println("REQUEST STARTED")
-
-	time.Sleep(9 * time.Second)
-
-	log.Println("REQUEST FINISHED")
 
 	var reqBody previewTripRequest
 	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
@@ -75,7 +68,7 @@ func handleTripPreview(w http.ResponseWriter, r *http.Request) {
 
 	defer tripService.Close()
 
-	// Can add pool of connections instead 
+	// Can add pool of connections instead
 	tripPreview, err := tripService.Client.PreviewTrip(r.Context(), reqBody.toProto())
 	if err != nil {
 		log.Printf("Failed to preview a trip: %v", err)
@@ -87,6 +80,3 @@ func handleTripPreview(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusCreated, response)
 }
-
-
-
