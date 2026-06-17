@@ -49,8 +49,8 @@ func (s *service) GetRoute(ctx context.Context, pickup, destination *types.Coord
 				} `json:"geometry"`
 			}{
 				{
-					Distance: 5.0,
-					Duration: 600,
+					Distance: 5.0, 
+					Duration: 600, 
 					Geometry: struct {
 						Coordinates [][]float64 `json:"coordinates"`
 					}{
@@ -69,7 +69,7 @@ func (s *service) GetRoute(ctx context.Context, pickup, destination *types.Coord
 		destination.Longitude, destination.Latitude,
 	)
 
-	log.Printf("Fetching from OSRM API: URL: %s", url)
+	log.Printf("Started Fetching from OSRM API: URL: %s", url)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -82,7 +82,7 @@ func (s *service) GetRoute(ctx context.Context, pickup, destination *types.Coord
 		return nil, fmt.Errorf("failed to read the response: %v", err)
 	}
 
-	log.Printf("GOT RESPONSE FROM API %s", string(body))
+	log.Printf("Got response from OSRM API %s", string(body))
 
 	var routeResp tripTypes.OsrmApiResponse
 	if err := json.Unmarshal(body, &routeResp); err != nil {

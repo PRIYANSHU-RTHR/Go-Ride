@@ -122,7 +122,7 @@ export const DriverMap = ({ packageSlug }: { packageSlug: CarPackageSlug }) => {
   const destination = useMemo(
     () =>
       requestedTrip?.route?.geometry[0]?.coordinates[
-        requestedTrip?.route?.geometry[0]?.coordinates?.length - 1
+        requestedTrip?.route?.geometry[0]?.coordinates.length - 1
       ],
     [requestedTrip],
   );
@@ -164,7 +164,7 @@ export const DriverMap = ({ packageSlug }: { packageSlug: CarPackageSlug }) => {
 
           {startLocation && (
             <Marker
-              position={[startLocation.longitude, startLocation.latitude]}
+              position={[startLocation.latitude, startLocation.longitude]}
               icon={startLocationMarker}
             >
               <Popup>Start Location</Popup>
@@ -173,7 +173,7 @@ export const DriverMap = ({ packageSlug }: { packageSlug: CarPackageSlug }) => {
 
           {destination && (
             <Marker
-              position={[destination.longitude, destination.latitude]}
+              position={[destination.latitude, destination.longitude]}
               icon={destinationMarker}
             >
               <Popup>Destination</Popup>
