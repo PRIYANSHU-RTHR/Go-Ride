@@ -33,8 +33,11 @@ func handleRidersWebSocket(w http.ResponseWriter, r *http.Request, rb *messaging
 	connManager.Add(userID, conn)
 	defer connManager.Remove(userID)
 
+	// Initialize queue consumers
 	queues := []string{
+		messaging.NotifyDriverNoDriversFoundQueue,
 		messaging.NotifyDriverAssignQueue,
+		messaging.NotifyPaymentSessionCreatedQueue,
 	}
 
 	for _, q := range queues {
@@ -90,6 +93,7 @@ func handleDriversWebSocket(w http.ResponseWriter, r *http.Request, rb *messagin
 	// Closing connections
 	defer func() {
 		connManager.Remove(userID)
+
 		driverService.Client.UnregisterDriver(ctx, &driver.RegisterDriverRequest{
 			DriverID:    userID,
 			PackageSlug: packageSlug,
