@@ -98,4 +98,6 @@ Deployment manifests are provided for Kubernetes environments, including support
 * HTTPS ingress configuration
 * Scalable production deployments
 
-
+```
+🚧 Deployment documentation and production infrastructure setup are coming soon.
+```
