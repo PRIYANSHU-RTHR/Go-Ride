@@ -99,5 +99,14 @@ Deployment manifests are provided for Kubernetes environments, including support
 * Scalable production deployments
 
 ```
+Note on Stripe!
+
+Stripe onboarding is invite-only in India , so a US sandbox account was used for testing. This project uses Stripe test API keys (`pk_test_...` / `sk_test_...`), meaning all payments are fully simulated.
+
+```
+
+
+
+```
 🚧 Deployment documentation and production infrastructure setup are coming soon.
 ```
