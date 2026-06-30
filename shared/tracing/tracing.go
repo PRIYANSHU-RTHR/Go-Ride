@@ -5,42 +5,49 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Config struct {
-	ServiceName    string
-	Environment    string
-	JaegerEndpoint string
+	ServiceName  string
+	Environment  string
+	OTLPEndpoint string
 }
 
 func InitTracer(cfg Config) (func(context.Context) error, error) {
 	// Exporter
-	traceExporter, err := newExporter(cfg.JaegerEndpoint)
+	traceExporter, err := newExporter(cfg.OTLPEndpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	// Trace Provider
+	// Tracer Provider
 	traceProvider, err := newTraceProvider(cfg, traceExporter)
 	if err != nil {
 		return nil, err
 	}
+
 	otel.SetTracerProvider(traceProvider)
 
 	// Propagator
-	prop := newPropagator()
-	otel.SetTextMapPropagator(prop)
+	otel.SetTextMapPropagator(newPropagator())
 
 	return traceProvider.Shutdown, nil
 }
 
 func newExporter(endpoint string) (sdktrace.SpanExporter, error) {
-	return jaeger.New(jaeger.WithCollectorEndpoint(jaeger.WithEndpoint(endpoint)))
+	ctx := context.Background()
+
+	return otlptracegrpc.New(
+		ctx,
+		otlptracegrpc.WithEndpoint(endpoint),
+		otlptracegrpc.WithInsecure(), // Remove this if your collector uses TLS
+	)
 }
 
 func newPropagator() propagation.TextMapPropagator {
@@ -50,8 +57,13 @@ func newPropagator() propagation.TextMapPropagator {
 	)
 }
 
+func GetTracer(name string) trace.Tracer {
+	return otel.Tracer(name)
+}
+
 func newTraceProvider(cfg Config, exporter sdktrace.SpanExporter) (*sdktrace.TracerProvider, error) {
-	res, err := resource.New(context.Background(),
+	res, err := resource.New(
+		context.Background(),
 		resource.WithAttributes(
 			semconv.ServiceNameKey.String(cfg.ServiceName),
 			semconv.DeploymentEnvironmentKey.String(cfg.Environment),

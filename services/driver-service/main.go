@@ -20,9 +20,9 @@ func main() {
 
 	// Initialize Tracing
 	tracerCfg := tracing.Config{
-		ServiceName:    "driver-service",
-		Environment:    env.GetString("ENVIRONMENT", "development"),
-		JaegerEndpoint: env.GetString("JAEGER_ENDPOINT", "http://jaeger:14268/api/traces"),
+		ServiceName:  "driver-service",
+		Environment:  env.GetString("ENVIRONMENT", "development"),
+		OTLPEndpoint: env.GetString("OTLP_ENDPOINT", "jaeger:4317"),
 	}
 
 	sh, err := tracing.InitTracer(tracerCfg)
@@ -33,9 +33,9 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	defer sh(ctx)
-	
+
 	rabbitMqURI := env.GetString("RABBITMQ_URI", "amqp://guest:guest@rabbitmq:5672/")
-	
+
 	go func() {
 		sigCh := make(chan os.Signal, 1)
 		signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
@@ -60,7 +60,7 @@ func main() {
 	log.Println("Starting RabbitMQ connection")
 
 	// Starting the gRPC server
-	grpcServer := grpcserver.NewServer()
+	grpcServer := grpcserver.NewServer(tracing.WithTracingInterceptors()...)
 	NewGrpcHandler(grpcServer, svc)
 
 	consumer := NewTripConsumer(rabbitmq, svc)

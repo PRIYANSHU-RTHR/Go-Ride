@@ -23,9 +23,9 @@ var GrpcAddr = ":9093"
 func main() {
 	// Initialize Tracing
 	tracerCfg := tracing.Config{
-		ServiceName:    "trip-service",
-		Environment:    env.GetString("ENVIRONMENT", "development"),
-		JaegerEndpoint: env.GetString("JAEGER_ENDPOINT", "http://jaeger:14268/api/traces"),
+		ServiceName:  "trip-service",
+		Environment:  env.GetString("ENVIRONMENT", "development"),
+		OTLPEndpoint: env.GetString("OTLP_ENDPOINT", "jaeger:4317"),
 	}
 
 	sh, err := tracing.InitTracer(tracerCfg)
@@ -73,7 +73,7 @@ func main() {
 	go paymentConsumer.Listen()
 
 	// Starting the gRPC server
-	grpcServer := grpcserver.NewServer()
+	grpcServer := grpcserver.NewServer(tracing.WithTracingInterceptors()...)
 	grpc.NewGRPCHandler(grpcServer, svc, publisher)
 
 	log.Printf("Starting gRPC server Trip service on port %s", lis.Addr().String())

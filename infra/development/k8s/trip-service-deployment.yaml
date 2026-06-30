@@ -31,10 +31,10 @@ spec:
                   name: rabbitmq-credentials
                   key: uri
 
-            - name: JAEGER_ENDPOINT
+            - name: OTLP_ENDPOINT
               valueFrom:
                 configMapKeyRef:
-                  key: JAEGER_ENDPOINT
+                  key: OTLP_ENDPOINT
                   name: app-config
 ---
 apiVersion: v1

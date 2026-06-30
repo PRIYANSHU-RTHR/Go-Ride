@@ -22,9 +22,9 @@ var GrpcAddr = env.GetString("GRPC_ADDR", ":9004")
 func main() {
 	// Initialize Tracing
 	tracerCfg := tracing.Config{
-		ServiceName:    "payment-service",
-		Environment:    env.GetString("ENVIRONMENT", "development"),
-		JaegerEndpoint: env.GetString("JAEGER_ENDPOINT", "http://jaeger:14268/api/traces"),
+		ServiceName:  "payment-service",
+		Environment:  env.GetString("ENVIRONMENT", "development"),
+		OTLPEndpoint: env.GetString("OTLP_ENDPOINT", "jaeger:4317"),
 	}
 
 	sh, err := tracing.InitTracer(tracerCfg)
@@ -37,7 +37,6 @@ func main() {
 	defer sh(ctx)
 
 	rabbitMqURI := env.GetString("RABBITMQ_URI", "amqp://guest:guest@rabbitmq:5672/")
-
 
 	go func() {
 		sigCh := make(chan os.Signal, 1)
