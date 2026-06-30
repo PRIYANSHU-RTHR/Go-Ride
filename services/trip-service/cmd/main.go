@@ -27,7 +27,7 @@ func main() {
 		Environment:    env.GetString("ENVIRONMENT", "development"),
 		JaegerEndpoint: env.GetString("JAEGER_ENDPOINT", "http://jaeger:14268/api/traces"),
 	}
-	
+
 	sh, err := tracing.InitTracer(tracerCfg)
 	if err != nil {
 		log.Fatalf("Failed to initialize the tracer: %v", err)
@@ -67,6 +67,10 @@ func main() {
 
 	driverConsumer := events.NewDriverConsumer(rabbitmq, svc)
 	go driverConsumer.Listen()
+
+	// Start payment consumer
+	paymentConsumer := events.NewPaymentConsumer(rabbitmq, svc)
+	go paymentConsumer.Listen()
 
 	// Starting the gRPC server
 	grpcServer := grpcserver.NewServer()
